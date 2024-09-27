@@ -7,7 +7,7 @@
 
 <ModeWatcher />
 <div class="m-4">
-    <div class="float-right mt-4 mr-8">
+    <div class="float-right mt-7 mr-6">
         <ToggleTheme />
     </div>
     <h1 class="text-6xl text-center p-2 mb-8">tic tac toe</h1>
