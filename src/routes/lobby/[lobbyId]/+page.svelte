@@ -5,19 +5,65 @@
     import { Textarea } from '$lib/components/ui/textarea/index.js';
     import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
     import { onMount } from 'svelte';
+    import { io } from 'socket.io-client';
+    import Input from '$lib/components/ui/input/input.svelte';
 
+    const socket = io();
     let { lobbyId } = $page.params;
-    let player_name: string | null = $state(player.get());
+    let player_name: string = $state(player.get());
+    let is_creator: boolean = $state(player.creator());
+
+    let chat: any[] = $state([]);
+    let input_text: string = $state('');
 
     // game related
-    const board_size = Array(9).fill(' ');
+    const board_size = Array(9).fill('');
     let board = $state(board_size);
-    let player_turn: number = 1;
-    let player_turn_hover: number = $state(1);
+    let client_turn = $state();
+    let is_client_turn = $state(false);
+
+    function handleChatSubmit(e: Event) {
+        e.preventDefault();
+        chat.push({ messages: input_text, client: true });
+        socket.emit('sio-msgsFromClient', lobbyId, input_text);
+        input_text = '';
+    }
+
+    function handleMove(i: number) {
+        if (!is_client_turn || board[i] !== '') {
+            console.log('did not move');
+            return; // Block moves if game is over (|| gameOver)
+        }
+
+        console.log('hereee');
+        socket.emit('sio-move', lobbyId, { index: i, player: client_turn });
+    }
+
+    socket.emit('sio-joinLobby', lobbyId, ({ gameState }: any) => {
+        board = gameState.board;
+        is_client_turn = gameState.server_turn === client_turn;
+        // console.log(gameState);
+        // is_client_turn = server_turn === client_turn;
+        // console.log(is_client_turn);
+    });
+
+    socket.on('sio-msgsFromServer', (message) => {
+        chat.push({ messages: message, client: false });
+    });
+
+    // Handle incoming move updates
+    socket.on('sio-move', (gameState) => {
+        board = gameState.board;
+        is_client_turn = gameState.server_turn === client_turn; // Check if it's now your turn
+        console.log('from move: ', is_client_turn);
+    });
 
     onMount(() => {
-        const pname: string | null = localStorage.getItem('pname');
-        if (!player_name) player_name = pname ? pname : 'anonymous';
+        const user: any = JSON.parse(localStorage.getItem('user')!);
+        if (user.plobby === lobbyId) {
+            player_name = user.pname;
+            client_turn = user.creator ? 1 : 2;
+        }
     });
 </script>
 
@@ -38,16 +84,12 @@
         <div class="grid grid-cols-3 grid-rows-3 p-2">
             {#each board as cell, i}
                 <button
-                    class={cell == ' '
+                    class={cell === ''
                         ? 'cell cell-color ' +
-                          (player_turn_hover === 1 ? 'cell-color-hover-p1' : 'cell-color-hover-p2')
+                          (client_turn === 1 ? 'cell-color-hover-p1' : 'cell-color-hover-p2')
                         : 'cell-disabled font-bold ' +
-                          (player_turn === 0 ? 'cell-color-disabled-p1' : 'cell-color-disabled-p2')}
-                    onclick={() => {
-                        board[i] = player_turn === 1 ? 'X' : 'O';
-                        player_turn = player_turn === 1 ? 0 : 1;
-                        player_turn_hover = player_turn_hover === 1 ? 0 : 1;
-                    }}
+                          (client_turn === 1 ? 'cell-color-disabled-p1' : 'cell-color-disabled-p2')}
+                    onclick={() => handleMove(i)}
                 >
                     {cell}
                 </button>
@@ -58,7 +100,7 @@
     <!-- game status -->
     <div class="border col-span-3 md:col-span-3 flex justify-center items-center p-2">
         <h2 class="font-bold text-large md:text-3xl text-center">
-            waiting for other player to connect
+            {is_client_turn ? 'your turn...' : 'opponents turn...'}
         </h2>
     </div>
 
@@ -66,7 +108,7 @@
     <div class="border justify-center items-center col-span-2 md:col-span-2 px-2 py-4">
         <ScrollArea>
             <ul class="italic dark:text-gray-700 text-gray-300 text-xs md:text-sm">
-                <li>lobby is created by {player_name}...</li>
+                <li>{'you ' + (client_turn === 1 ? 'created' : 'joined') + ' the lobby...'}</li>
             </ul>
         </ScrollArea>
     </div>
@@ -74,34 +116,30 @@
     <!-- chat -->
     <div class="row-span-1 col-span-5 md:row-span-3 md:col-span-2">
         <div class="h-full flex flex-col">
-            <div class="bg-muted/50 border rounded-xl p-4">
+            <div class="bg-muted/50 border rounded-xl p-4 h-full">
                 <ScrollArea
                     class="h-36 md:h-[85%] rounded-md border px-4 py-4 flex flex-col w-full "
                 >
                     <div class="flex flex-col">
-                        <p class="max-w-[70%]">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Debitis
-                            laboriosam perferendis saepe tempora suscipit quia illo id asperiores
-                            quaerat, aliquam voluptates velit. Magni voluptatum cum ratione debitis
-                            eos labore distinctio!
-                        </p>
-                        <br />
-                        <p class="max-w-[70%] self-end">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Debitis
-                            laboriosam perferendis saepe tempora suscipit quia illo id asperiores
-                            quaerat, aliquam voluptates velit. Magni voluptatum cum ratione debitis
-                            eos labore distinctio!
-                        </p>
+                        {#each chat as c}
+                            <p class={'max-w-[70%]' + (c.client ? ' self-end' : ' self-start')}>
+                                {c.messages}
+                            </p>
+                            <br />
+                        {/each}
                     </div>
                 </ScrollArea>
 
                 <form
                     class="bg-background focus-within:ring-ring relative overflow-hidden rounded-lg border focus-within:ring-1 flex items-center justify-center"
+                    onsubmit={handleChatSubmit}
                 >
-                    <Textarea
+                    <Input
                         id="message"
                         placeholder="Type your message here..."
-                        class="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0 overflow-hidden"
+                        class="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0 overflow-hidden flex-1"
+                        bind:value={input_text}
+                        autocomplete="off"
                     />
                     <div class="flex items-center p-3 justify-center">
                         <Button type="submit" size="sm" class="ml-auto gap-1.5">Send</Button>

@@ -2,32 +2,61 @@
     import { goto } from '$app/navigation';
     import { Button } from '$lib/components/ui/button';
     import { player } from '$lib/playerName.svelte';
+    import { io } from 'socket.io-client';
+    import { onMount } from 'svelte';
 
-    let player_name = '';
-    let lobbyId = '';
+    let player_name: string = $state('');
+    let lobbyId: string = $state('');
+
+    const socket = io();
 
     function handleCreate() {
         if (player_name) {
             player.set(player_name);
-            const newLobbyId = Math.random().toString(36).substring(2, 8);
+            player.isCreator();
+            const newLobbyId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            socket.emit('sio-createLobby', newLobbyId);
             goto(`/lobby/${newLobbyId}`);
-            localStorage.setItem('pname', player_name);
+            lobbyId = newLobbyId;
+            localStorage.setItem(
+                'user',
+                JSON.stringify({ pname: player_name, plobby: lobbyId, creator: true })
+            );
         } else {
-            alert('please enter player name');
+            alert('please enter your name to continue...');
         }
     }
 
     function handleJoin() {
         if (lobbyId && player_name) {
-            console.log('success join');
+            player.set(player_name);
+            player.notCreator();
+            socket.emit(
+                'sio-checkLobby',
+                lobbyId,
+                ({ success, message }: { success: boolean; message: string }) => {
+                    if (success) {
+                        goto(`/lobby/${lobbyId}`);
+                        localStorage.setItem(
+                            'user',
+                            JSON.stringify({ pname: player_name, plobby: lobbyId, creator: false })
+                        );
+                    } else {
+                        alert(message);
+                    }
+                }
+            );
         } else if (lobbyId) {
-            console.log('fail join');
             alert('please enter player name');
         } else {
-            console.log('fail join');
             alert('please enter lobby id');
         }
     }
+
+    onMount(() => {
+        const pname: string | null = localStorage.getItem('pname');
+        if (!player_name) player_name = pname ? pname : '';
+    });
 </script>
 
 <h1 class="text-5xl md:text-6xl text-center p-2 mb-8">tic tac toe</h1>

@@ -1,5 +1,6 @@
 class Player {
     name: string = $state('');
+    is_creator: boolean = $state(false);
 
     get() {
         return this.name;
@@ -7,6 +8,18 @@ class Player {
 
     set(newName: string) {
         this.name = newName;
+    }
+
+    isCreator() {
+        this.is_creator = true;
+    }
+
+    notCreator() {
+        this.is_creator = false;
+    }
+
+    creator() {
+        return this.is_creator;
     }
 }
 
