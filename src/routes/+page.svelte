@@ -11,6 +11,7 @@
             player.set(player_name);
             const newLobbyId = Math.random().toString(36).substring(2, 8);
             goto(`/lobby/${newLobbyId}`);
+            localStorage.setItem('pname', player_name);
         } else {
             alert('please enter player name');
         }
@@ -59,7 +60,7 @@
             <Button class="py-2 text-2xl px-7 mt-10 h-fit" type="button" onclick={handleCreate}
                 >create lobby</Button
             >
-            <p class="my-4 text-gray-500">--- o r ---</p>
+            <p class="my-4 text-gray-500 text-center">--- o r ---</p>
             <div class="flex justify-center items-center">
                 <input
                     type="text"
