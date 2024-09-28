@@ -1,7 +1,8 @@
 <script lang="ts">
     import { page } from '$app/stores';
     import { player } from '$lib/playerName.svelte';
-    import ChatInput from '../../../ui/ChatInput.svelte';
+    import { Button } from '$lib/components/ui/button/index.js';
+    import { Textarea } from '$lib/components/ui/textarea/index.js';
     import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
     import { onMount } from 'svelte';
 
@@ -20,17 +21,20 @@
     });
 </script>
 
-<h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2">Welcome {player_name}</h1>
+<!-- svelte-ignore non_reactive_update -->
+<h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2 capitalize">
+    hi {player_name}
+</h1>
 
-<p class="text-center text-lg mb-4">lobby id: {lobbyId}</p>
+<p class="text-center text-lg mb-4">lobby id: <span class="underline">{lobbyId}</span></p>
 
 <div
     class="grid grid-rows-4 grid-cols-5 grid-flow-row md:grid-rows-4 md:grid-cols-5 md:grid-flow-col gap-2 h-full min-h-[78vh]"
 >
+    <!-- TIC TAC TOE BOARD -->
     <div
         class="border row-span-3 col-span-5 md:row-span-3 md:col-span-3 flex justify-center items-center"
     >
-        <!-- TIC TAC TOE BOARD -->
         <div class="grid grid-cols-3 grid-rows-3 p-2">
             {#each board as cell, i}
                 <button
@@ -50,25 +54,30 @@
             {/each}
         </div>
     </div>
+
+    <!-- game status -->
     <div class="border col-span-3 md:col-span-3 flex justify-center items-center p-2">
-        <!-- game status -->
         <h2 class="font-bold text-large md:text-3xl text-center">
             waiting for other player to connect
         </h2>
     </div>
+
+    <!-- log -->
     <div class="border justify-center items-center col-span-2 md:col-span-2 px-2 py-4">
-        <!-- log -->
         <ScrollArea>
-            <ul class="italic dark:text-gray-700 text-gray-300 text-xs">
+            <ul class="italic dark:text-gray-700 text-gray-300 text-xs md:text-sm">
                 <li>lobby is created by {player_name}...</li>
             </ul>
         </ScrollArea>
     </div>
 
+    <!-- chat -->
     <div class="row-span-1 col-span-5 md:row-span-3 md:col-span-2">
         <div class="h-full flex flex-col">
             <div class="bg-muted/50 border rounded-xl p-4">
-                <ScrollArea class="h-36 md:h-72 rounded-md border px-4 py-4 flex flex-col w-full ">
+                <ScrollArea
+                    class="h-36 md:h-[85%] rounded-md border px-4 py-4 flex flex-col w-full "
+                >
                     <div class="flex flex-col">
                         <p class="max-w-[70%]">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Debitis
@@ -85,7 +94,19 @@
                         </p>
                     </div>
                 </ScrollArea>
-                <ChatInput />
+
+                <form
+                    class="bg-background focus-within:ring-ring relative overflow-hidden rounded-lg border focus-within:ring-1 flex items-center justify-center"
+                >
+                    <Textarea
+                        id="message"
+                        placeholder="Type your message here..."
+                        class="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0 overflow-hidden"
+                    />
+                    <div class="flex items-center p-3 justify-center">
+                        <Button type="submit" size="sm" class="ml-auto gap-1.5">Send</Button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
