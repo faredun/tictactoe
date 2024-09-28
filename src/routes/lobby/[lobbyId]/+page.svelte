@@ -83,26 +83,21 @@
     });
 </script>
 
-<h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2 capitalize">
-    hi <span
-        class={'underline ' +
-            (client_turn == 1 ? 'decoration-red-400' : 'decoration-blue-400') +
-            ' decoration-3 decoration-wavy'}>{player_name}</span
-    >
-    (player {client_turn})
+<h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2 tracking-wider">
+    ~ hi <span class={'capitalize ' + (client_turn == 1 ? 'text-red-400' : 'text-blue-400')}
+        >{player_name}</span
+    > ~
 </h1>
 
-<p class="text-center text-lg mb-4">
+<p class="text-center text-lg mb-4 tracking-wide">
     lobby id: <span class="text-xl">{lobbyId}</span>
 </p>
 
 <div
-    class="grid grid-rows-4 grid-cols-5 grid-flow-row md:grid-rows-4 md:grid-cols-5 md:grid-flow-col gap-2 h-full min-h-[78vh]"
+    class="grid grid-rows-4 grid-cols-5 grid-flow-row md:grid-rows-4 md:grid-cols-5 md:grid-flow-col gap-2 min-h-[78vh]"
 >
     <!-- TIC TAC TOE BOARD -->
-    <div
-        class="border row-span-3 col-span-5 md:row-span-3 md:col-span-3 flex justify-center items-center"
-    >
+    <div class="row-span-3 col-span-5 md:row-span-3 md:col-span-3 flex justify-center items-center">
         <div class="grid grid-cols-3 grid-rows-3 p-2">
             {#each board as cell, i}
                 <button
@@ -124,8 +119,8 @@
     </div>
 
     <!-- game status -->
-    <div class="border col-span-3 md:col-span-3 flex justify-center items-center p-2">
-        <div class="font-bold text-large md:text-3xl text-center">
+    <div class="border col-span-3 md:col-span-3 flex justify-center items-center p-2 rounded-lg">
+        <div class="font-medium tracking-widest text-large md:text-3xl text-center">
             {#if game_over}
                 <div class=" flex gap-8">
                     {game_over_message}
@@ -136,13 +131,13 @@
                     </div>
                 </div>
             {:else}
-                {is_client_turn ? 'your turn...' : 'opponents turn...'}
+                {is_client_turn ? 'your turn ...' : "opponent's turn, please wait ..."}
             {/if}
         </div>
     </div>
 
     <!-- log -->
-    <div class="border justify-center items-center col-span-2 md:col-span-2 px-2 py-4">
+    <div class="border justify-center items-center col-span-2 md:col-span-2 px-4 py-6 rounded-lg">
         <ScrollArea>
             <ul class="italic dark:text-gray-700 text-gray-300 text-xs md:text-sm">
                 <li>{'you ' + (client_turn === 1 ? 'created' : 'joined') + ' the lobby...'}</li>
@@ -154,9 +149,7 @@
     <div class="row-span-1 col-span-5 md:row-span-3 md:col-span-2">
         <div class="h-full flex flex-col">
             <div class="bg-muted/50 border rounded-xl p-4 h-full">
-                <ScrollArea
-                    class="h-36 md:h-[85%] rounded-md border px-4 py-4 flex flex-col w-full "
-                >
+                <ScrollArea class="h-36 md:h-[85%] rounded-md px-4 py-4 flex flex-col w-full ">
                     <div class="flex flex-col">
                         {#each chat as c}
                             <p

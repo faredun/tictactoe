@@ -64,14 +64,14 @@
     <div
         class="px-4 py-16 border flex flex-col md:flex-1 justify-around items-center md:h-[50vh] h-[30vh] min-h-fit cursor-pointer"
     >
-        <h2 class="text-3xl">Single-Player</h2>
+        <h2 class="text-3xl tracking-widest">Single-Player</h2>
         <p>play against AI (easy/hard mode)</p>
         <p class="italic">coming soon ...</p>
     </div>
     <div
         class="border flex flex-col md:flex-1 justify-center items-center md:h-[50vh] px-4 pt-8 pb-12 min-h-fit"
     >
-        <h2 class="text-3xl mb-12 text-center">Multi-Player</h2>
+        <h2 class="text-3xl mb-12 text-center tracking-widest">Multi-Player</h2>
         <form class="justify-self-center flex flex-col" on:submit|preventDefault={handleCreate}>
             <input
                 type="text"
