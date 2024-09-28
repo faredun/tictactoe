@@ -11,7 +11,6 @@
     const socket = io();
     let { lobbyId } = $page.params;
     let player_name: string = $state(player.get());
-    let is_creator: boolean = $state(player.creator());
 
     let chat: any[] = $state([]);
     let input_text: string = $state('');
@@ -19,8 +18,10 @@
     // game related
     const board_size = Array(9).fill('');
     let board = $state(board_size);
-    let client_turn = $state();
+    let client_turn: number | undefined = $state();
     let is_client_turn = $state(false);
+    let game_over = $state(false);
+    let game_over_message = $state('');
 
     function handleChatSubmit(e: Event) {
         e.preventDefault();
@@ -30,21 +31,26 @@
     }
 
     function handleMove(i: number) {
-        if (!is_client_turn || board[i] !== '') {
+        if (!is_client_turn || board[i] !== '' || game_over) {
             console.log('did not move');
-            return; // Block moves if game is over (|| gameOver)
+            return; // Block moves if game is over
         }
 
-        console.log('hereee');
         socket.emit('sio-move', lobbyId, { index: i, player: client_turn });
+    }
+
+    function handleReset() {
+        socket.emit('sio-reset', lobbyId);
+    }
+    function handleQuit() {
+        socket.emit('sio-quit', lobbyId);
     }
 
     socket.emit('sio-joinLobby', lobbyId, ({ gameState }: any) => {
         board = gameState.board;
         is_client_turn = gameState.server_turn === client_turn;
-        // console.log(gameState);
-        // is_client_turn = server_turn === client_turn;
-        // console.log(is_client_turn);
+        game_over = gameState.completed;
+        game_over_message = gameState.winner;
     });
 
     socket.on('sio-msgsFromServer', (message) => {
@@ -54,8 +60,18 @@
     // Handle incoming move updates
     socket.on('sio-move', (gameState) => {
         board = gameState.board;
-        is_client_turn = gameState.server_turn === client_turn; // Check if it's now your turn
-        console.log('from move: ', is_client_turn);
+        // coming_from_server = game ? true : false;
+        is_client_turn = gameState.server_turn === client_turn;
+    });
+    socket.on('sio-gameover', (winner) => {
+        game_over = true;
+        game_over_message = winner;
+    });
+    socket.on('sio-reset-server', (gameState) => {
+        board = gameState.board;
+        is_client_turn = gameState.server_turn === client_turn;
+        game_over = gameState.completed;
+        game_over_message = gameState.winner;
     });
 
     onMount(() => {
@@ -67,12 +83,18 @@
     });
 </script>
 
-<!-- svelte-ignore non_reactive_update -->
 <h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2 capitalize">
-    hi {player_name}
+    hi <span
+        class={'underline ' +
+            (client_turn == 1 ? 'decoration-red-400' : 'decoration-blue-400') +
+            ' decoration-3 decoration-wavy'}>{player_name}</span
+    >
+    (player {client_turn})
 </h1>
 
-<p class="text-center text-lg mb-4">lobby id: <span class="underline">{lobbyId}</span></p>
+<p class="text-center text-lg mb-4">
+    lobby id: <span class="text-xl">{lobbyId}</span>
+</p>
 
 <div
     class="grid grid-rows-4 grid-cols-5 grid-flow-row md:grid-rows-4 md:grid-cols-5 md:grid-flow-col gap-2 h-full min-h-[78vh]"
@@ -86,9 +108,13 @@
                 <button
                     class={cell === ''
                         ? 'cell cell-color ' +
-                          (client_turn === 1 ? 'cell-color-hover-p1' : 'cell-color-hover-p2')
-                        : 'cell-disabled font-bold ' +
-                          (client_turn === 1 ? 'cell-color-disabled-p1' : 'cell-color-disabled-p2')}
+                          (client_turn === 1 && is_client_turn && !game_over
+                              ? 'cell-color-hover-p1'
+                              : client_turn === 2 && is_client_turn && !game_over
+                                ? 'cell-color-hover-p2'
+                                : 'cell-disabled')
+                        : 'cell-disabled ' +
+                          (cell === 'X' ? 'cell-color-disabled-p1' : 'cell-color-disabled-p2')}
                     onclick={() => handleMove(i)}
                 >
                     {cell}
@@ -99,9 +125,20 @@
 
     <!-- game status -->
     <div class="border col-span-3 md:col-span-3 flex justify-center items-center p-2">
-        <h2 class="font-bold text-large md:text-3xl text-center">
-            {is_client_turn ? 'your turn...' : 'opponents turn...'}
-        </h2>
+        <div class="font-bold text-large md:text-3xl text-center">
+            {#if game_over}
+                <div class=" flex gap-8">
+                    {game_over_message}
+                    <div class="flex gap-2">
+                        <Button type="button" onclick={handleReset} class="text-lg">restart?</Button
+                        >
+                        <Button type="button" onclick={handleQuit} class="text-lg">quit</Button>
+                    </div>
+                </div>
+            {:else}
+                {is_client_turn ? 'your turn...' : 'opponents turn...'}
+            {/if}
+        </div>
     </div>
 
     <!-- log -->
@@ -122,7 +159,14 @@
                 >
                     <div class="flex flex-col">
                         {#each chat as c}
-                            <p class={'max-w-[70%]' + (c.client ? ' self-end' : ' self-start')}>
+                            <p
+                                class={'max-w-[70%] px-4 py-1 rounded-xl justify-self-end' +
+                                    (c.client
+                                        ? ' self-end ' +
+                                          (client_turn === 1 ? 'bg-red-500' : 'bg-blue-600')
+                                        : ' self-start ' +
+                                          (client_turn === 1 ? 'bg-blue-600' : 'bg-red-500'))}
+                            >
                                 {c.messages}
                             </p>
                             <br />
