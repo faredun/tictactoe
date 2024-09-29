@@ -37,7 +37,13 @@
             // player.isCreator();
             const newLobbyId = Math.random().toString(36).substring(2, 8).toUpperCase();
             socket.emit('sio-createLobby', newLobbyId);
-            goto(`/lobby/${newLobbyId}`);
+
+            // goto(`/lobby/${newLobbyId}`);
+
+            const link = document.getElementById('create-lobby-link');
+            link!.setAttribute('href', `/lobby/${newLobbyId}`);
+            link!.click();
+
             lobbyId = newLobbyId;
             localStorage.setItem(
                 'user',
@@ -57,7 +63,10 @@
                 lobbyId,
                 ({ success, message }: { success: boolean; message: string }) => {
                     if (success) {
-                        goto(`/lobby/${lobbyId}`);
+                        // goto(`/lobby/${lobbyId}`);
+                        const link = document.getElementById('join-lobby-link');
+                        link!.setAttribute('href', `/lobby/${lobbyId}`);
+                        link!.click();
                         localStorage.setItem(
                             'user',
                             JSON.stringify({ pname: player_name, plobby: lobbyId, creator: false })
@@ -118,6 +127,7 @@
                 }}
                 required
             />
+            <a id="create-lobby-link" class="hidden" aria-labelledby="create"></a>
             <Button
                 class="py-2 text-lg px-7 mt-10 h-fit w-fit rounded-none tracking-wider font-mono"
                 type="button"
@@ -136,6 +146,7 @@
                         }
                     }}
                 />
+                <a id="join-lobby-link" class="hidden" aria-labelledby="create"></a>
                 <Button
                     class="text-lg px-4 rounded-none tracking-wider font-mono"
                     type="button"

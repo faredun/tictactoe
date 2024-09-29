@@ -71,7 +71,10 @@
     function handleQuit() {
         socket.emit('sio-quit', lobbyId);
         toast.success('you quit succesfully... going back to homepage ');
-        goto('/');
+        // goto('/');
+        const link = document.getElementById('quit-lobby-link');
+        link!.setAttribute('href', `/`);
+        link!.click();
     }
 
     function handleCopy() {
@@ -176,6 +179,7 @@
                 </button>
             {/each}
         </div>
+        <a id="quit-lobby-link" class="hidden" aria-labelledby="create"></a>
         <div class="pb-6 tracking-wider">
             <Button type="button" onclick={handleQuit} class="text-base">quit</Button>
         </div>
