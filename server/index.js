@@ -76,7 +76,7 @@ io.on('connection', (socket) => {
         if (!room || !room.has(socket.id) || room.size <= 2) {
             socket.join(lobbyId);
             room = io.sockets.adapter.rooms.get(lobbyId);
-            console.log(`sio: user joined lobby: ${lobbyId}`);
+            console.log(`---sio: user joined lobby: ${lobbyId}`);
             init_player = 1;
 
             if (room && room.size === 1) {
