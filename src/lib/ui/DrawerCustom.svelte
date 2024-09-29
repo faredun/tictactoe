@@ -27,6 +27,11 @@
                     </li>
                 {/each}
             </ul>
+            <div class="md:ml-44 ml-32">
+                <a href="https://github.com/faredun/tictactoe/tree/main" class="underline">
+                    code repo link</a
+                >
+            </div>
             <Drawer.Footer>
                 <Drawer.Close>Cancel</Drawer.Close>
             </Drawer.Footer>
