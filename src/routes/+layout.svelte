@@ -6,6 +6,12 @@
     let { children } = $props();
 </script>
 
+<svelte:head>
+    <title>tic tac toe</title>
+    <meta name="description" content="play tictactoe with your friends" />
+    <link rel="icon" href="/favicon.png" />
+</svelte:head>
+
 <ModeWatcher />
 <div class="hide-scrollbar overflow-auto h-screen">
     <div class="m-4 h-full min-h-fit">
