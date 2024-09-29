@@ -1,20 +1,20 @@
 <script>
     import { ModeWatcher } from 'mode-watcher';
-    import ToggleTheme from '../ui/ToggleTheme.svelte';
-
+    import ToggleTheme from '$lib/ui/ToggleTheme.svelte';
     import '../app.css';
+
+    let { children } = $props();
 </script>
 
 <ModeWatcher />
 <div class="hide-scrollbar overflow-auto h-screen">
-    <div class="m-4 h-full">
+    <div class="m-4 h-full min-h-fit">
         <div class="absolute top-0 right-0 mt-6 md:mt-12 mr-4 md:mr-6">
             <ToggleTheme />
         </div>
-
-        <slot />
+        {@render children()}
     </div>
-    <footer class="bottom-0 text-center w-full py-10">
+    <footer class="bottom-0 text-center w-full py-10 mt-20 md:mt-0">
         <p>
             {'made with ♡ by faredun'}
         </p>

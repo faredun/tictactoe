@@ -87,10 +87,11 @@ const webSocketServer = {
                 currentLobbyId = lobbyId;
                 let room = io.sockets.adapter.rooms.get(lobbyId);
 
-                if (!room || !room.has(socket.id) || room.size >= 2) {
+                if (!room || !room.has(socket.id) || room.size <= 2) {
                     socket.join(lobbyId);
                     room = io.sockets.adapter.rooms.get(lobbyId);
                     console.log(`sio: user joined lobby: ${lobbyId}`);
+                    init_player = 1;
 
                     console.log('room size : ', room?.size);
                     if (room && room.size === 1) {
@@ -103,7 +104,7 @@ const webSocketServer = {
                         console.log('board initialized in lobby :', lobbyId);
                     }
 
-                    socket.to(lobbyId).emit('sio-userJoined', 'a new user has joined the lobby.');
+                    socket.to(lobbyId).emit('sio-log-messages', 'a player has joined the lobby...');
                 } else {
                     console.log(
                         `sio: user ${socket.id} already in lobby ${lobbyId}, no join event triggered.`
@@ -127,6 +128,11 @@ const webSocketServer = {
 
                     console.log('reached here');
                     io.to(lobbyId).emit('sio-move', gameState);
+                    io.to(lobbyId).emit(
+                        'sio-log-messages',
+                        gameState.board[index] + ' made a move ...'
+                    );
+
                     // Check if there is a winner or if the game is a tie
                     const winner = checkWinner(gameState.board);
                     console.log('here i am, ', winner);
@@ -158,11 +164,12 @@ const webSocketServer = {
                 };
                 const gameState = lobbies[lobbyId];
                 io.to(lobbyId).emit('sio-reset-server', gameState);
+                io.to(lobbyId).emit('sio-log-messages', 'game restarted...');
             });
 
-            socket.on('sio-reset', (lobbyId) => {
-                delete lobbies[lobbyId];
-                console.log('lobby deleted: ', lobbies);
+            socket.on('sio-quit', (lobbyId) => {
+                socket.to(lobbyId).emit('sio-log-messages', 'player disconnected...');
+                socket.disconnect();
             });
 
             // When the user disconnects, check if the lobby is empty

@@ -1,9 +1,11 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { toast } from 'svelte-sonner';
     import { Button } from '$lib/components/ui/button';
     import { player } from '$lib/playerName.svelte';
     import { io } from 'socket.io-client';
-    import { onMount } from 'svelte';
+    import { Toaster } from '$lib/components/ui/sonner';
+    import DrawerCustom from '$lib/ui/DrawerCustom.svelte';
 
     let player_name: string = $state('');
     let lobbyId: string = $state('');
@@ -23,7 +25,7 @@
                 JSON.stringify({ pname: player_name, plobby: lobbyId, creator: true })
             );
         } else {
-            alert('please enter your name to continue...');
+            toast.error('please enter your name...');
         }
     }
 
@@ -42,68 +44,78 @@
                             JSON.stringify({ pname: player_name, plobby: lobbyId, creator: false })
                         );
                     } else {
-                        alert(message);
+                        toast.error(message);
                     }
                 }
             );
         } else if (lobbyId) {
-            alert('please enter player name');
+            toast.error('please enter your name ...');
         } else {
-            alert('please enter lobby id');
+            toast.error('please enter a lobby id to join ...');
         }
     }
 
-    onMount(() => {
-        const pname: string | null = localStorage.getItem('pname');
+    $effect(() => {
+        const pname: string | null = JSON.parse(localStorage.getItem('user')!).pname;
         if (!player_name) player_name = pname ? pname : '';
     });
 </script>
 
-<h1 class="text-5xl md:text-6xl text-center p-2 mb-8">tic tac toe</h1>
-<div class="flex gap-8 mx-[5%] lg:mx-[15%] md:mx-[5%] md:mt-[10%] flex-col md:flex-row">
+<Toaster />
+<h1 class="text-3xl md:text-6xl text-center p-2 mb-8 tracking-widest">~ tic tac toe ~</h1>
+<div class="flex gap-8 mx-[5%] lg:mx-[15%] md:mx-[5%] md:mt-[10%] flex-col-reverse md:flex-row">
     <div
-        class="px-4 py-16 border flex flex-col md:flex-1 justify-around items-center md:h-[50vh] h-[30vh] min-h-fit cursor-pointer"
+        class="px-4 py-16 border flex flex-col md:flex-1 justify-around items-center md:min-h-[50vh] min-h-fit gap-8"
     >
         <h2 class="text-3xl tracking-widest">Single-Player</h2>
         <p>play against AI (easy/hard mode)</p>
         <p class="italic">coming soon ...</p>
+        <div
+            class="dark:hover:bg-slate-300 dark:bg-slate-200 dark:text-slate-900 hover:bg-slate-600 bg-slate-800 text-slate-200 tracking-wider p-4"
+        >
+            <DrawerCustom />
+        </div>
     </div>
     <div
         class="border flex flex-col md:flex-1 justify-center items-center md:h-[50vh] px-4 pt-8 pb-12 min-h-fit"
     >
         <h2 class="text-3xl mb-12 text-center tracking-widest">Multi-Player</h2>
-        <form class="justify-self-center flex flex-col" on:submit|preventDefault={handleCreate}>
+        <form class="justify-self-center flex flex-col items-center">
             <input
                 type="text"
                 placeholder="your name ..."
-                class="border px-4 py-2 h-fit w-full text-center text-lg"
+                class=" px-4 py-2 h-fit w-full text-center text-lg mb-8"
                 bind:value={player_name}
-                on:keydown={(e) => {
+                onkeydown={(e) => {
                     if (e.key === 'Enter') {
-                        console.log('entered');
                         handleCreate();
                     }
                 }}
                 required
             />
-            <Button class="py-2 text-2xl px-7 mt-10 h-fit" type="button" onclick={handleCreate}
-                >create lobby</Button
+            <Button
+                class="py-2 text-lg px-7 mt-10 h-fit w-fit rounded-none tracking-wider font-mono"
+                type="button"
+                onclick={handleCreate}>create lobby</Button
             >
             <p class="my-4 text-gray-500 text-center">--- o r ---</p>
             <div class="flex justify-center items-center">
                 <input
                     type="text"
-                    class="border mr-2 h-10 w-3/5 text-center"
+                    class=" mr-2 h-10 w-4/5 text-center"
                     placeholder="lobby id ..."
                     bind:value={lobbyId}
-                    on:keydown={(e) => {
+                    onkeydown={(e) => {
                         if (e.key === 'Enter') {
-                            console.log('entered');
                             handleJoin();
                         }
                     }}
                 />
-                <Button class="text-xl px-4" type="button" onclick={handleJoin}>join</Button>
+                <Button
+                    class="text-lg px-4 rounded-none tracking-wider font-mono"
+                    type="button"
+                    onclick={handleJoin}>join</Button
+                >
             </div>
         </form>
     </div>

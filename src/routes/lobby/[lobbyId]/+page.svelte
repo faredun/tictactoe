@@ -2,11 +2,10 @@
     import { page } from '$app/stores';
     import { player } from '$lib/playerName.svelte';
     import { Button } from '$lib/components/ui/button/index.js';
-    import { Textarea } from '$lib/components/ui/textarea/index.js';
     import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
-    import { onMount } from 'svelte';
     import { io } from 'socket.io-client';
     import Input from '$lib/components/ui/input/input.svelte';
+    import { goto } from '$app/navigation';
 
     const socket = io();
     let { lobbyId } = $page.params;
@@ -16,12 +15,14 @@
     let input_text: string = $state('');
 
     // game related
-    const board_size = Array(9).fill('');
-    let board = $state(board_size);
+    const board_init: string[] = Array(9).fill('');
+    let board: string[] = $state(board_init);
     let client_turn: number | undefined = $state();
-    let is_client_turn = $state(false);
-    let game_over = $state(false);
-    let game_over_message = $state('');
+    let is_client_turn: boolean = $state(false);
+    let game_over: boolean = $state(false);
+    let game_over_message: string = $state('');
+
+    let log_messages: string[] = $state([]);
 
     function handleChatSubmit(e: Event) {
         e.preventDefault();
@@ -44,6 +45,7 @@
     }
     function handleQuit() {
         socket.emit('sio-quit', lobbyId);
+        goto('/');
     }
 
     socket.emit('sio-joinLobby', lobbyId, ({ gameState }: any) => {
@@ -74,13 +76,20 @@
         game_over_message = gameState.winner;
     });
 
-    onMount(() => {
+    socket.on('sio-log-messages', (message) => {
+        log_messages.push(message);
+    });
+
+    let init_creator;
+    $effect(() => {
         const user: any = JSON.parse(localStorage.getItem('user')!);
         if (user.plobby === lobbyId) {
             player_name = user.pname;
             client_turn = user.creator ? 1 : 2;
+            init_creator = user.creator;
         }
     });
+    log_messages.push('you ' + (init_creator ? 'created' : 'joined') + ' the lobby...');
 </script>
 
 <h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2 tracking-wider">
@@ -94,10 +103,12 @@
 </p>
 
 <div
-    class="grid grid-rows-4 grid-cols-5 grid-flow-row md:grid-rows-4 md:grid-cols-5 md:grid-flow-col gap-2 min-h-[78vh]"
+    class="grid grid-rows-8 grid-cols-5 grid-flow-row md:grid-rows-4 md:grid-cols-5 md:grid-flow-col gap-2 md:h-[78vh] mb-1"
 >
     <!-- TIC TAC TOE BOARD -->
-    <div class="row-span-3 col-span-5 md:row-span-3 md:col-span-3 flex justify-center items-center">
+    <div
+        class="flex-col gap-8 row-span-3 col-span-5 md:row-span-3 md:col-span-3 flex justify-center items-center"
+    >
         <div class="grid grid-cols-3 grid-rows-3 p-2">
             {#each board as cell, i}
                 <button
@@ -116,6 +127,9 @@
                 </button>
             {/each}
         </div>
+        <div class="pb-6 tracking-wider">
+            <Button type="button" onclick={handleQuit} class="text-base">quit</Button>
+        </div>
     </div>
 
     <!-- game status -->
@@ -124,11 +138,7 @@
             {#if game_over}
                 <div class=" flex gap-8">
                     {game_over_message}
-                    <div class="flex gap-2">
-                        <Button type="button" onclick={handleReset} class="text-lg">restart?</Button
-                        >
-                        <Button type="button" onclick={handleQuit} class="text-lg">quit</Button>
-                    </div>
+                    <Button type="button" onclick={handleReset} class="text-lg">restart?</Button>
                 </div>
             {:else}
                 {is_client_turn ? 'your turn ...' : "opponent's turn, please wait ..."}
@@ -137,19 +147,21 @@
     </div>
 
     <!-- log -->
-    <div class="border justify-center items-center col-span-2 md:col-span-2 px-4 py-6 rounded-lg">
-        <ScrollArea>
+    <div class="border justify-center items-center col-span-2 md:col-span-2 px-4 py-4 rounded-lg">
+        <ScrollArea class="h-[15vh]">
             <ul class="italic dark:text-gray-700 text-gray-300 text-xs md:text-sm">
-                <li>{'you ' + (client_turn === 1 ? 'created' : 'joined') + ' the lobby...'}</li>
+                {#each [...log_messages].reverse() as message}
+                    <li>{message}</li>
+                {/each}
             </ul>
         </ScrollArea>
     </div>
 
     <!-- chat -->
-    <div class="row-span-1 col-span-5 md:row-span-3 md:col-span-2">
+    <div class="row-span-3 col-span-5 md:row-span-3 md:col-span-2 relative">
         <div class="h-full flex flex-col">
             <div class="bg-muted/50 border rounded-xl p-4 h-full">
-                <ScrollArea class="h-36 md:h-[85%] rounded-md px-4 py-4 flex flex-col w-full ">
+                <ScrollArea class=" h-36 md:h-[85%] rounded-md px-4 py-4 flex flex-col w-full ">
                     <div class="flex flex-col">
                         {#each chat as c}
                             <p
@@ -168,7 +180,7 @@
                 </ScrollArea>
 
                 <form
-                    class="bg-background focus-within:ring-ring relative overflow-hidden rounded-lg border focus-within:ring-1 flex items-center justify-center"
+                    class="absolute bottom-2 right-2 w-[97%] bg-background focus-within:ring-ring overflow-hidden rounded-lg border focus-within:ring-1 flex items-center justify-center"
                     onsubmit={handleChatSubmit}
                 >
                     <Input
