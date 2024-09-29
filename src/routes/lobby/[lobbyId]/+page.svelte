@@ -1,20 +1,38 @@
 <script lang="ts">
+    // --------------------------------
+    //          imports
+    // --------------------------------
+
+    // navigation and route params
     import { page } from '$app/stores';
-    import { player } from '$lib/playerName.svelte';
-    import { Button } from '$lib/components/ui/button/index.js';
-    import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
-    import { io } from 'socket.io-client';
-    import Input from '$lib/components/ui/input/input.svelte';
     import { goto } from '$app/navigation';
 
+    // socket.io
+    import { io } from 'socket.io-client';
+
+    // shadcn
+    import { Button } from '$lib/components/ui/button/index.js';
+    import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
+    import Input from '$lib/components/ui/input/input.svelte';
+    import { Toaster } from '$lib/components/ui/sonner';
+    import { toast } from 'svelte-sonner';
+    // import { player } from '$lib/playerName.svelte';
+
+    //copy
+    import { copy } from 'svelte-copy';
+    // --------------------------------
+    //          variables
+    // --------------------------------
+
     const socket = io();
+
     let { lobbyId } = $page.params;
-    let player_name: string = $state(player.get());
 
-    let chat: any[] = $state([]);
-    let input_text: string = $state('');
+    // player name
+    let player_name: string = $state('');
+    let init_creator: boolean | undefined;
 
-    // game related
+    // game
     const board_init: string[] = Array(9).fill('');
     let board: string[] = $state(board_init);
     let client_turn: number | undefined = $state();
@@ -22,7 +40,16 @@
     let game_over: boolean = $state(false);
     let game_over_message: string = $state('');
 
+    // user log
     let log_messages: string[] = $state([]);
+
+    // chat
+    let input_text: string = $state('');
+    let chat: any[] = $state([]); // define type later
+
+    // --------------------------------
+    //          functions
+    // --------------------------------
 
     function handleChatSubmit(e: Event) {
         e.preventDefault();
@@ -33,10 +60,8 @@
 
     function handleMove(i: number) {
         if (!is_client_turn || board[i] !== '' || game_over) {
-            console.log('did not move');
-            return; // Block moves if game is over
+            return;
         }
-
         socket.emit('sio-move', lobbyId, { index: i, player: client_turn });
     }
 
@@ -45,8 +70,17 @@
     }
     function handleQuit() {
         socket.emit('sio-quit', lobbyId);
+        toast.success('you quit succesfully... going back to homepage ');
         goto('/');
     }
+
+    function handleCopy() {
+        toast.success('lobby ID copied');
+    }
+
+    // --------------------------------
+    //   socket.io emits and receives
+    // --------------------------------
 
     socket.emit('sio-joinLobby', lobbyId, ({ gameState }: any) => {
         board = gameState.board;
@@ -59,28 +93,30 @@
         chat.push({ messages: message, client: false });
     });
 
-    // Handle incoming move updates
     socket.on('sio-move', (gameState) => {
         board = gameState.board;
         // coming_from_server = game ? true : false;
         is_client_turn = gameState.server_turn === client_turn;
     });
+
     socket.on('sio-gameover', (winner) => {
         game_over = true;
         game_over_message = winner;
     });
+
     socket.on('sio-reset-server', (gameState) => {
         board = gameState.board;
         is_client_turn = gameState.server_turn === client_turn;
         game_over = gameState.completed;
         game_over_message = gameState.winner;
+        toast.success('game is restarting...');
     });
 
     socket.on('sio-log-messages', (message) => {
         log_messages.push(message);
     });
 
-    let init_creator;
+    // on load
     $effect(() => {
         const user: any = JSON.parse(localStorage.getItem('user')!);
         if (user.plobby === lobbyId) {
@@ -89,38 +125,51 @@
             init_creator = user.creator;
         }
     });
+
     log_messages.push('you ' + (init_creator ? 'created' : 'joined') + ' the lobby...');
 </script>
 
-<h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2 tracking-wider">
-    ~ hi <span class={'capitalize ' + (client_turn == 1 ? 'text-red-400' : 'text-blue-400')}
-        >{player_name}</span
-    > ~
-</h1>
+<Toaster />
+<!-- header section -->
+<section>
+    <h1 class="text-2xl md:text-3xl text-center p-2 mb-4 md:mt-10 mt-2 tracking-wide font-mono">
+        ~ hi <span class={'capitalize ' + (client_turn == 1 ? 'text-red-400' : 'text-blue-400')}
+            >{player_name}</span
+        > ~
+    </h1>
 
-<p class="text-center text-lg mb-4 tracking-wide">
-    lobby id: <span class="text-xl">{lobbyId}</span>
-</p>
+    <p class="text-center text-lg mb-4 tracking-wide">
+        lobby id: <span
+            class="text-xl font-mono tracking-wider dark:hover:bg-slate-800 hover:bg-slate-200 p-2"
+        >
+            <button use:copy={lobbyId} onclick={handleCopy}>
+                {lobbyId}
+            </button>
+        </span>
+    </p>
+</section>
 
+<!-- main grid layout -->
 <div
     class="grid grid-rows-8 grid-cols-5 grid-flow-row md:grid-rows-4 md:grid-cols-5 md:grid-flow-col gap-2 md:h-[78vh] mb-1"
 >
-    <!-- TIC TAC TOE BOARD -->
-    <div
+    <!-- board section -->
+    <section
         class="flex-col gap-8 row-span-3 col-span-5 md:row-span-3 md:col-span-3 flex justify-center items-center"
     >
         <div class="grid grid-cols-3 grid-rows-3 p-2">
             {#each board as cell, i}
                 <button
-                    class={cell === ''
-                        ? 'cell cell-color ' +
-                          (client_turn === 1 && is_client_turn && !game_over
-                              ? 'cell-color-hover-p1'
-                              : client_turn === 2 && is_client_turn && !game_over
-                                ? 'cell-color-hover-p2'
-                                : 'cell-disabled')
-                        : 'cell-disabled ' +
-                          (cell === 'X' ? 'cell-color-disabled-p1' : 'cell-color-disabled-p2')}
+                    class={'font-extrabold ' +
+                        (cell === ''
+                            ? 'cell cell-color ' +
+                              (client_turn === 1 && is_client_turn && !game_over
+                                  ? 'cell-color-hover-p1'
+                                  : client_turn === 2 && is_client_turn && !game_over
+                                    ? 'cell-color-hover-p2'
+                                    : 'cell-disabled')
+                            : 'cell-disabled ' +
+                              (cell === 'X' ? 'cell-color-disabled-p1' : 'cell-color-disabled-p2'))}
                     onclick={() => handleMove(i)}
                 >
                     {cell}
@@ -130,11 +179,13 @@
         <div class="pb-6 tracking-wider">
             <Button type="button" onclick={handleQuit} class="text-base">quit</Button>
         </div>
-    </div>
+    </section>
 
-    <!-- game status -->
-    <div class="border col-span-3 md:col-span-3 flex justify-center items-center p-2 rounded-lg">
-        <div class="font-medium tracking-widest text-large md:text-3xl text-center">
+    <!-- game status  -->
+    <section
+        class="border col-span-3 md:col-span-3 flex justify-center items-center p-2 rounded-lg"
+    >
+        <div class="font-medium tracking-wider text-large md:text-2xl text-center">
             {#if game_over}
                 <div class=" flex gap-8">
                     {game_over_message}
@@ -144,10 +195,12 @@
                 {is_client_turn ? 'your turn ...' : "opponent's turn, please wait ..."}
             {/if}
         </div>
-    </div>
+    </section>
 
     <!-- log -->
-    <div class="border justify-center items-center col-span-2 md:col-span-2 px-4 py-4 rounded-lg">
+    <section
+        class="border justify-center items-center col-span-2 md:col-span-2 px-4 py-4 rounded-lg"
+    >
         <ScrollArea class="h-[15vh]">
             <ul class="italic dark:text-gray-700 text-gray-300 text-xs md:text-sm">
                 {#each [...log_messages].reverse() as message}
@@ -155,10 +208,10 @@
                 {/each}
             </ul>
         </ScrollArea>
-    </div>
+    </section>
 
     <!-- chat -->
-    <div class="row-span-3 col-span-5 md:row-span-3 md:col-span-2 relative">
+    <section class="row-span-3 col-span-5 md:row-span-3 md:col-span-2 relative">
         <div class="h-full flex flex-col">
             <div class="bg-muted/50 border rounded-xl p-4 h-full">
                 <ScrollArea class=" h-36 md:h-[85%] rounded-md px-4 py-4 flex flex-col w-full ">
@@ -196,11 +249,10 @@
                 </form>
             </div>
         </div>
-    </div>
+    </section>
 </div>
 
 <style lang="postcss">
-    /* your styles go here */
     .cell {
         margin: 0.125rem;
         height: 85px;

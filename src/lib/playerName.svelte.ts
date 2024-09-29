@@ -1,3 +1,6 @@
+// not using this anymore
+// checking to see global state management using runes and classes
+
 class Player {
     name: string = $state('');
     is_creator: boolean = $state(false);

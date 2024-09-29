@@ -1,21 +1,40 @@
 <script lang="ts">
+    // --------------------------------
+    //           imports
+    // --------------------------------
+
+    // navigation
     import { goto } from '$app/navigation';
-    import { toast } from 'svelte-sonner';
-    import { Button } from '$lib/components/ui/button';
-    import { player } from '$lib/playerName.svelte';
+
+    // socket.io
     import { io } from 'socket.io-client';
+
+    // shadcn
+    import { Button } from '$lib/components/ui/button';
     import { Toaster } from '$lib/components/ui/sonner';
+    import { toast } from 'svelte-sonner';
+
+    // components
     import DrawerCustom from '$lib/ui/DrawerCustom.svelte';
+    // import { player } from '$lib/playerName.svelte';
+
+    // --------------------------------
+    //          variables
+    // --------------------------------
 
     let player_name: string = $state('');
     let lobbyId: string = $state('');
 
     const socket = io();
 
+    // --------------------------------
+    //          functions
+    // --------------------------------
+
     function handleCreate() {
         if (player_name) {
-            player.set(player_name);
-            player.isCreator();
+            // player.set(player_name);
+            // player.isCreator();
             const newLobbyId = Math.random().toString(36).substring(2, 8).toUpperCase();
             socket.emit('sio-createLobby', newLobbyId);
             goto(`/lobby/${newLobbyId}`);
@@ -31,8 +50,8 @@
 
     function handleJoin() {
         if (lobbyId && player_name) {
-            player.set(player_name);
-            player.notCreator();
+            // player.set(player_name);
+            // player.notCreator();
             socket.emit(
                 'sio-checkLobby',
                 lobbyId,
@@ -55,6 +74,7 @@
         }
     }
 
+    // on page load (client side)
     $effect(() => {
         const pname: string | null = JSON.parse(localStorage.getItem('user')!).pname;
         if (!player_name) player_name = pname ? pname : '';
@@ -62,8 +82,11 @@
 </script>
 
 <Toaster />
+<!-- header -->
 <h1 class="text-3xl md:text-6xl text-center p-2 mb-8 tracking-widest">~ tic tac toe ~</h1>
+
 <div class="flex gap-8 mx-[5%] lg:mx-[15%] md:mx-[5%] md:mt-[10%] flex-col-reverse md:flex-row">
+    <!-- single player -->
     <div
         class="px-4 py-16 border flex flex-col md:flex-1 justify-around items-center md:min-h-[50vh] min-h-fit gap-8"
     >
@@ -76,6 +99,8 @@
             <DrawerCustom />
         </div>
     </div>
+
+    <!-- multiplayer -->
     <div
         class="border flex flex-col md:flex-1 justify-center items-center md:h-[50vh] px-4 pt-8 pb-12 min-h-fit"
     >
